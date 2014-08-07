@@ -1,0 +1,191 @@
+
+
+<style>
+#yarv_selrect
+{
+	position:absolute;
+	z-index:100;
+	background:blue;
+	opacity:0.5;
+//	filter:alpha(opacity=50); /* For IE8 and earlier */
+	border:2px solid #2266AA; 
+}
+</style>
+
+<div id="yarv_selrect" style="display:none" onmouseup="mouseup(event)">
+</div>
+
+<p>Click-drag to zoom, single-click to unzoom</p>
+
+<script LANGUAGE="JavaScript" type="text/javascript">
+
+var yarv_history = new Array(); // remember zooming in for zoom out
+var yarv_tracking = null; // which <img> are we tracking?
+
+var end = $end; // Math.floor(new Date().valueOf()/1000);
+var start = $start; // end - 24*3600;
+var rrd = '$rrd';
+var cgi = '$url';
+var width = $width;
+var height = $height;
+
+
+function yarv_toStrDateTime(x, show_seconds) {
+    var d = (new Date(x*1000)).toISOString();
+    var tlen = show_seconds ? 8 : 5;
+    var t = d.substr(11,tlen);
+    d = d.substr(0,10);
+    return d+' '+t;
+}
+
+function yarv_loadImage(imgid) {
+    //alert(imgid);
+    var show_seconds = (end-start) <= 3600;
+    document.form1.start.value = yarv_toStrDateTime(start, show_seconds);
+    document.form1.end.value = yarv_toStrDateTime(end, show_seconds);
+    var img = document.getElementById(imgid);
+    img.src = cgi + '?' + 'w=' + width + '&amp;h=' + height + '&amp;r=' + rrd + '&amp;s=' + start + '&amp;e=' + end;
+}
+
+if(document.addEventListener){
+    document.addEventListener('mouseup', function (event) {mouseup(event)});
+} else if(document.attachEvent){
+    document.attachEvent('mouseup', function (event) {mouseup(event)});
+}
+
+
+function yarv_xlat_button(event) {
+    if (event.which == null)
+	/* IE case */
+	return (event.button < 2) ? "LEFT" :
+	((event.button == 4) ? "MIDDLE" : "RIGHT");
+
+    /* All others */
+    return (event.which < 2) ? "LEFT" :
+	((event.which == 2) ? "MIDDLE" : "RIGHT");
+}
+
+function yarv_mousedown(event, imgid) {
+    event = event || window.event; // IE-ism
+    if (yarv_xlat_button(event) != 'LEFT')
+	return;
+    event.preventDefault();
+    yarv_tracking = imgid;
+    var ss = document.getElementById('yarv_selrect').style;
+    ss.top=event.clientY+'px';
+    ss.left=event.clientX+'px';
+    ss.height=1+'px';
+    ss.width=1+'px';
+    ss.display='block';
+}
+
+//function toInt(i) {
+//    return Math.floor(i); // (i|0) creates a 32 bit int, breaks in 2038
+//}
+
+function yarv_mouseup(event) {
+    if (!yarv_tracking)
+	return;
+
+    if (yarv_xlat_button(event) != 'LEFT')
+	return;
+
+    var ss = document.getElementById('yarv_selrect').style;
+    //var selrect = document.getElementById('yarv_selrect');
+    ss.display='none';
+
+    var imgid = yarv_tracking;
+    var img = document.getElementById(imgid);
+    yarv_tracking = null;
+
+    ///alert(yarv_selrect.style.left+'-'+ss.width);
+    var selwidth = parseInt(ss.width);
+    if (selwidth <= 1) {
+	zoomOut();
+	return;
+    }
+
+    var x1 = parseInt(ss.left);
+    var x2 = x1+selwidth;
+    //	alert(x1+'-'+x2);
+    var diffsec = end - start;
+    var graph_left = img.getAttribute('graph_left');
+    // alert(graph_left);
+    var xstart = parseInt(img.x) + graph_left;
+    // alert(xstart);
+    var dx1px = x1-xstart;
+    //	alert('dx1px='+dx1px+'width='+width);
+    var dx1sec = Math.floor(dx1px/width*diffsec);
+    var dx2px = x2-xstart;
+    var dx2sec = Math.floor(dx2px/width*diffsec);
+    //	alert('diffsec='+diffsec+', dx1sec='+dx1sec+', dx2sec='+dx2sec);
+    var x = {s:start,e:end};
+    yarv_history.push(x);
+    end = start+dx2sec;
+    start += dx1sec;
+
+    yarv_loadImage(imgid);
+}
+
+// FIXME: Don't let selrect out of real graph area
+function yarv_mousemove(event) {
+    if (yarv_xlat_button(event) != 'LEFT')
+	return;
+
+    if (!yarv_tracking)
+	return;
+
+    event = event || window.event; // IE-ism
+
+    if(event.offsetX || event.offsetY) { //For Internet Explorer
+	x=event.offsetX;
+	y=event.offsetY;
+    } else { //For FireFox
+	x=event.pageX;
+	y=event.pageY;
+    } 
+    var ss = document.getElementById('yarv_selrect').style;
+    ss.height=(y-parseInt(ss.top)) + 'px';
+    ss.width=(x-parseInt(ss.left)) + 'px';
+
+}
+
+/* Never called? Just leave the alert in to see if it is ever called */
+function yarv_losecapture() {
+    yarv_tracking = null;
+    document.getElementById('yarv_selrect').style.display = 'none';
+    alert('capture lost');
+}
+
+function zoomOut() {
+    if (yarv_history.length == 0) {
+	//alert('No zoom yarv_history');
+	//return;
+	var diffsec = end - start;
+	start -= diffsec;
+	end += diffsec;
+	var now = Math.floor((new Date()).valueOf()/1000);
+	if (now < end) {
+	    diffsec = end - now;
+	    start -= diffsec;
+	    end -= diffsec;
+	}
+    } else {
+	var x=yarv_history.pop();
+	start=x.s;
+	end=x.e;
+    }
+    yarv_loadImage('yarv_img1');
+}
+
+</script>
+
+<div id='yarv_img1_div'>
+  <img id='yarv_img1' 
+     onmousemove='yarv_mousemove(event)' onmousedown='yarv_mousedown(event, "yarv_img1")' onmouseup='yarv_mouseup(event)' onlosecapture='yarv_losecapture()' graph_left='$graph_left'
+     >
+</div>
+
+<script LANGUAGE="JavaScript" type="text/javascript">
+  yarv_loadImage('yarv_img1');
+</script>
