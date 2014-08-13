@@ -12,7 +12,7 @@
 }
 </style>
 
-<div id="yarv_selrect" style="display:none" onmouseup="mouseup(event)">
+<div id="yarv_selrect" style="display:none" onmouseup="yarv_mouseup(event)">
 </div>
 
 <p>Click-drag to zoom, single-click to unzoom</p>
@@ -22,20 +22,35 @@
 var yarv_history = new Array(); // remember zooming in for zoom out
 var yarv_tracking = null; // which <img> are we tracking?
 
-var end = $end; // Math.floor(new Date().valueOf()/1000);
-var start = $start; // end - 24*3600;
-var rrd = '$rrd';
-var cgi = '$url';
-var width = $width;
-var height = $height;
+var yarv_debugging = 0;
+var end = ${end}; // Math.floor(new Date().valueOf()/1000);
+var start = ${start}; // end - 24*3600;
+var rrd = '${rrd}';
+var cgi = '${url}';
+var width = ${width};
+var height = ${height};
 
+function yarv_d2(x) {
+
+    if (x<10) x = "0" + x;
+    return x;
+}
 
 function yarv_toStrDateTime(x, show_seconds) {
-    var d = (new Date(x*1000)).toISOString();
-    var tlen = show_seconds ? 8 : 5;
-    var t = d.substr(11,tlen);
-    d = d.substr(0,10);
-    return d+' '+t;
+
+    // var d = (new Date(x*1000)).toISOString();
+    // var tlen = show_seconds ? 8 : 5;
+    // var t = d.substr(11,tlen);
+    // d = d.substr(0,10);
+    // return d+' '+t;
+
+    var d = new Date(x*1000);
+    var t = yarv_d2(d.getHours()) + ':' + yarv_d2(d.getMinutes());
+    if (show_seconds) {
+        t += ':' + yarv_d2(d.getSeconds());
+    }
+    d = d.getFullYear() + '-' + yarv_d2(d.getMonth()) + '-' + yarv_d2(d.getDate()) + ' ' + t;
+    return d;
 }
 
 function yarv_loadImage(imgid) {
@@ -48,9 +63,9 @@ function yarv_loadImage(imgid) {
 }
 
 if(document.addEventListener){
-    document.addEventListener('mouseup', function (event) {mouseup(event)});
+    document.addEventListener('mouseup', function (event) {yarv_mouseup(event)});
 } else if(document.attachEvent){
-    document.attachEvent('mouseup', function (event) {mouseup(event)});
+    document.attachEvent('mouseup', function (event) {yarv_mouseup(event)});
 }
 
 
@@ -68,8 +83,9 @@ function yarv_xlat_button(event) {
 function yarv_mousedown(event, imgid) {
     event = event || window.event; // IE-ism
     if (yarv_xlat_button(event) != 'LEFT')
-	return;
+	    return;
     event.preventDefault();
+    if (yarv_debugging) console.log('mousedown');
     yarv_tracking = imgid;
     var ss = document.getElementById('yarv_selrect').style;
     ss.top=event.clientY+'px';
@@ -79,9 +95,27 @@ function yarv_mousedown(event, imgid) {
     ss.display='block';
 }
 
-//function toInt(i) {
-//    return Math.floor(i); // (i|0) creates a 32 bit int, breaks in 2038
-//}
+function yarv_selrect2time(ss) {
+    var img = document.getElementById(yarv_tracking);
+    var selwidth = parseInt(ss.width);
+    var x1 = parseInt(ss.left);
+    var x2 = x1+selwidth;
+    var graph_left = parseInt(img.getAttribute('graph_left'));
+    var img_left = parseInt(img.x);
+    var xstart = img_left + graph_left;
+    var diffsec = end - start;
+    var dx1px = x1-xstart;
+    var dx1sec = Math.floor(dx1px/width*diffsec);
+    var dx2px = x2-xstart;
+    var dx2sec = Math.floor(dx2px/width*diffsec);
+
+    if (yarv_debugging) console.log('start='+yarv_toStrDateTime(start, 1)+', graph_left='+graph_left+', img_left='+img_left);
+    if (yarv_debugging) console.log('xstart='+xstart+', x1='+x1+', dx1px='+dx1px+', dx1sec='+dx1sec);
+    var s = start+dx1sec;
+    var e = start+dx2sec;
+
+    if (yarv_debugging) console.log( yarv_toStrDateTime(s, 1) + ' - ' + yarv_toStrDateTime(e, 1) );
+}
 
 function yarv_mouseup(event) {
     if (!yarv_tracking)
@@ -90,26 +124,26 @@ function yarv_mouseup(event) {
     if (yarv_xlat_button(event) != 'LEFT')
 	return;
 
+    if (yarv_debugging) console.log('mouseup');
     var ss = document.getElementById('yarv_selrect').style;
     //var selrect = document.getElementById('yarv_selrect');
     ss.display='none';
 
-    var imgid = yarv_tracking;
-    var img = document.getElementById(imgid);
-    yarv_tracking = null;
-
     ///alert(yarv_selrect.style.left+'-'+ss.width);
     var selwidth = parseInt(ss.width);
     if (selwidth <= 1) {
-	zoomOut();
-	return;
+        yarv_tracking = null;
+	    zoomOut();
+	    return;
     }
+
+    var img = document.getElementById(yarv_tracking);
 
     var x1 = parseInt(ss.left);
     var x2 = x1+selwidth;
-    //	alert(x1+'-'+x2);
+    //alert(x1+'-'+x2);
     var diffsec = end - start;
-    var graph_left = img.getAttribute('graph_left');
+    var graph_left = parseInt(img.getAttribute('graph_left'));
     // alert(graph_left);
     var xstart = parseInt(img.x) + graph_left;
     // alert(xstart);
@@ -124,6 +158,8 @@ function yarv_mouseup(event) {
     end = start+dx2sec;
     start += dx1sec;
 
+    var imgid = yarv_tracking;
+    yarv_tracking = null;
     yarv_loadImage(imgid);
 }
 
@@ -135,6 +171,7 @@ function yarv_mousemove(event) {
     if (!yarv_tracking)
 	return;
 
+    if (yarv_debugging) console.log('mousemove');
     event = event || window.event; // IE-ism
 
     if(event.offsetX || event.offsetY) { //For Internet Explorer
@@ -147,7 +184,7 @@ function yarv_mousemove(event) {
     var ss = document.getElementById('yarv_selrect').style;
     ss.height=(y-parseInt(ss.top)) + 'px';
     ss.width=(x-parseInt(ss.left)) + 'px';
-
+    yarv_selrect2time(ss);
 }
 
 /* Never called? Just leave the alert in to see if it is ever called */
@@ -181,10 +218,11 @@ function zoomOut() {
 </script>
 
 <div id='yarv_img1_div'>
-  <img id='yarv_img1' 
-     onmousemove='yarv_mousemove(event)' onmousedown='yarv_mousedown(event, "yarv_img1")' onmouseup='yarv_mouseup(event)' onlosecapture='yarv_losecapture()' graph_left='$graph_left'
+  <img id='yarv_img1'
+     onmousemove='yarv_mousemove(event)' onmousedown='yarv_mousedown(event, "yarv_img1")' onmouseup='yarv_mouseup(event)' onlosecapture='yarv_losecapture()' graph_left=${graph_left}
      >
 </div>
+
 
 <script LANGUAGE="JavaScript" type="text/javascript">
   yarv_loadImage('yarv_img1');
