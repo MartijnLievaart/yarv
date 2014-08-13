@@ -38,12 +38,6 @@ function yarv_d2(x) {
 
 function yarv_toStrDateTime(x, show_seconds) {
 
-    // var d = (new Date(x*1000)).toISOString();
-    // var tlen = show_seconds ? 8 : 5;
-    // var t = d.substr(11,tlen);
-    // d = d.substr(0,10);
-    // return d+' '+t;
-
     var d = new Date(x*1000);
     var t = yarv_d2(d.getHours()) + ':' + yarv_d2(d.getMinutes());
     if (show_seconds) {

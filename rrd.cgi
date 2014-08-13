@@ -162,7 +162,14 @@ print
 
 exit;
 
-# <!-- <img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAtklEQVQ4ja3SsWoCQRSF4Q+LpLYNUVD0FZJenyu4261aCZLgg6UWYdUuhUUKC7VwUBBnR3AvDDPcw/xzuHO4VgsLlPgL+0/oJ2uIDTL00EQfeegPqi53sMVHRP8MkHYMsMBXwmGO75hYopsA9LCKiXu8hPPxzoJX/D/r4DcmPjqDWUx85Bd2eKt64TYHDdcc7JxnkSdcXpK4xgFLzPGOIkBGKUhVZQEyrQMyqQMyrgOSPQMpUJwAQnMwXeQXxVYAAAAASUVORK5CYII=' onclick='zoomOut()'> -->
+
+#
+# sub parse_template($template, \%vars)
+#
+# Cheap-ass template processing to reduce the dependencies
+# Maybe add TT as an option?
+#
+
 
 sub parse_template {
     my ($template, $vars) = @_;
@@ -179,11 +186,17 @@ sub parse_template {
     return $template;
 }
 
+#
+# sub error(@errors)
+#
+# Print a html page detailing the error(s) we found
+#
+
 sub error {
     print
         header,
         start_html('RRD viewer'),
-        "@_",
+        red(map("<p>$_</p>", @_)),
         end_html();
     exit;
 }
@@ -269,6 +282,9 @@ sub read_yarv_conf {
         return %conf;
 }
 
+#
+# We use only a few of these names, but they are here now
+#
 sub colornames {
         return map lc($_), qw/
 AliceBlue  F0F8FF
