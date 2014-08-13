@@ -49,7 +49,7 @@ function yarv_toStrDateTime(x, show_seconds) {
     if (show_seconds) {
         t += ':' + yarv_d2(d.getSeconds());
     }
-    d = d.getFullYear() + '-' + yarv_d2(d.getMonth()) + '-' + yarv_d2(d.getDate()) + ' ' + t;
+    d = d.getFullYear() + '-' + yarv_d2(d.getMonth()+1) + '-' + yarv_d2(d.getDate()) + ' ' + t;
     return d;
 }
 
