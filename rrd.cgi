@@ -6,6 +6,7 @@ use CGI qw(:standard);
 
 
 # FIXME: Let the user choose their timezone!
+# Current ass-u-mes server and client are in the same timezone
 
 
 use Date::Manip;
@@ -15,6 +16,7 @@ use RRDs;
 use POSIX; # strftime
 use FindBin;
 use File::Glob qw/bsd_glob/;
+use Data::Dumper;
 
 use strict;
 use warnings;
@@ -28,7 +30,8 @@ my $default_height = 250;
 our %colormap = colornames();
 my %modconf = read_yarv_conf();
 
-
+# Overriding CGIs url_param allows the script to be run from the commandline
+# Needs fixing though
 sub url_param {
         param @_;
 }
@@ -54,6 +57,8 @@ my $RRD_glob = $config{glob} || '*.rrd';
 $RRD_glob = "$RRD_dir/$RRD_glob";
 
 my $yarv_html = $config{html};
+# default config file location is script directory
+# Todo, search some better places like /etc a.o.
 unless ($yarv_html) {
         ($yarv_html = $ENV{SCRIPT_FILENAME}) =~ s!(.*/).*!$1yarv.html!;
 }
@@ -61,9 +66,6 @@ unless ($yarv_html) {
 die "Cannot find $yarv_html" unless -r $yarv_html;
 
 our $js = slurp($yarv_html);
-#die '$RRD_dir/rrd.def not found' unless -r "$RRD_dir/rrd.def";
-#chomp(our @def = grep !/^\s*(?:#|$)/, slurp("$RRD_dir/rrd.def"));
-
 
 sub safe_html {
     join('', map(encode_entities($_), @_));
@@ -100,8 +102,10 @@ print
     header,
     start_html('RRD viewer'),
     start_form(-name=>'form1'),
-    Dump,
-    popup_menu('RRD', \@RRDs),
+#    Dump,
+    (@RRDs > 1 ? 
+     "Data source:".popup_menu(RRD => \@RRDs) :
+     hidden(RRD => $RRDs[0])),
     "Start:",
     textfield('start'),
     "End:",
@@ -160,7 +164,6 @@ exit;
 
 # <!-- <img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAtklEQVQ4ja3SsWoCQRSF4Q+LpLYNUVD0FZJenyu4261aCZLgg6UWYdUuhUUKC7VwUBBnR3AvDDPcw/xzuHO4VgsLlPgL+0/oJ2uIDTL00EQfeegPqi53sMVHRP8MkHYMsMBXwmGO75hYopsA9LCKiXu8hPPxzoJX/D/r4DcmPjqDWUx85Bd2eKt64TYHDdcc7JxnkSdcXpK4xgFLzPGOIkBGKUhVZQEyrQMyqQMyrgOSPQMpUJwAQnMwXeQXxVYAAAAASUVORK5CYII=' onclick='zoomOut()'> -->
 
-use Data::Dumper;
 sub parse_template {
     my ($template, $vars) = @_;
     $vars->{url} = url();
