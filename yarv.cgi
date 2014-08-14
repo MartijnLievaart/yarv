@@ -22,13 +22,11 @@ use strict;
 use warnings;
 no warnings 'redefine';
 
+# FIXME.
 use constant CONF_FILE => '/projects/yarv/yarv.conf';
 
 my $default_width = 800;
 my $default_height = 250;
-
-our %colormap = colornames();
-my %modconf = read_yarv_conf();
 
 # Overriding CGIs url_param allows the script to be run from the commandline
 # Needs fixing though
@@ -36,10 +34,13 @@ sub url_param {
         param @_;
 }
 
+
+our %colormap = colornames();
+
+# Read the config for the module requested
+my %modconf = read_yarv_conf();
 my $module = url_param('module') || $modconf{'*'}{default_module};
 die "Unknown module" unless defined $module and exists $modconf{$module};
-
-
 my %config = %{$modconf{'*'}} if exists $modconf{'*'};
 #use Data::Dumper;
 #print Dumper(\%config); exit 0;
@@ -50,15 +51,16 @@ if ($config{geometry}) {
 $config{width} = $default_width unless $config{width};
 $config{height} = $default_height unless $config{height};
 
+
+
 our $RRD_dir = $config{directory}; # 'Variable will not stay shared...'
-`logger RRD_dir=$RRD_dir`;
+#`logger RRD_dir=$RRD_dir`;
 die 'No RRDdir' unless $RRD_dir and -d $RRD_dir;
-my $RRD_glob = $config{glob} || '*.rrd';
-$RRD_glob = "$RRD_dir/$RRD_glob";
+my $RRD_glob = $RRD_dir . ($config{glob} || '*.rrd');
 
 my $yarv_html = $config{html};
 # default config file location is script directory
-# Todo, search some better places like /etc a.o.
+# Todo, search some better places like /usr/share/yarv or something.
 unless ($yarv_html) {
         ($yarv_html = $ENV{SCRIPT_FILENAME}) =~ s!(.*/).*!$1yarv.html!;
 }
@@ -66,10 +68,6 @@ unless ($yarv_html) {
 die "Cannot find $yarv_html" unless -r $yarv_html;
 
 our $js = slurp($yarv_html);
-
-sub safe_html {
-    join('', map(encode_entities($_), @_));
-}
 
 
 if (url_param('s')) {
@@ -101,6 +99,7 @@ error("No RRDs found") unless @RRDs;
 print
     header,
     start_html('RRD viewer'),
+    '<script type="text/JavaScript" src="yarv.js">',
     start_form(-name=>'form1'),
 #    Dump,
     (@RRDs > 1 ? 
@@ -145,7 +144,7 @@ if ($start or $end) {
     $end = time;
     $start = time - 3600;
 }
-unless ($rrd) { push @err, "Missing rrd? Strange!"; }
+#unless ($rrd) { push @err, "Missing rrd? Strange!"; }
 
 if (!@err) {
     push @err, "Start must be before end" if $start >= $end;
@@ -174,6 +173,8 @@ exit;
 sub parse_template {
     my ($template, $vars) = @_;
     $vars->{url} = url();
+    # FIXME: imgid should be unique. This is not in pathalogical cases.
+    ($vars->{imgid} = $module . "_$vars->{rrd}") =~ s/[^[:alnum:]]/_/g;
     my $gi = create_png($vars);
 #    print STDERR 'gi=', Dumper($gi);
     $vars->{graph_top} = $gi->{graph_top};
@@ -429,3 +430,8 @@ Yellow  FFFF00
 YellowGreen  9ACD32
 /;
 }
+
+sub safe_html {
+    join('', map(encode_entities($_), @_));
+}
+
