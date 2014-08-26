@@ -39,7 +39,7 @@ our %colormap = colornames();
 
 # Read the config for the module requested
 my %modconf = read_yarv_conf();
-my $module = url_param('module') || $modconf{'*'}{default_module};
+our $module = url_param('module') || $modconf{'*'}{default_module};
 die "Unknown module" unless defined $module and exists $modconf{$module};
 my %config = %{$modconf{'*'}} if exists $modconf{'*'};
 #use Data::Dumper;
@@ -96,23 +96,6 @@ error("No RRDs found") unless @RRDs;
 
 
 
-print
-    header,
-    start_html('RRD viewer'),
-    '<script type="text/JavaScript" src="yarv.js">',
-    start_form(-name=>'form1'),
-#    Dump,
-    (@RRDs > 1 ? 
-     "Data source:".popup_menu(RRD => \@RRDs) :
-     hidden(RRD => $RRDs[0])),
-    "Start:",
-    textfield('start'),
-    "End:",
-    textfield('end'),
-    submit,
-    br,
-    end_form, "\n";
-
 my $start = uri_unescape(param('start'));
 my $end = uri_unescape(param('end'));
 my $rrd = uri_unescape(param('RRD')) || $RRDs[0];
@@ -141,14 +124,34 @@ if ($start or $end) {
 	#push @err, "Missing end date";
     }
 } else {
-    $end = time;
-    $start = time - 3600;
+        $end = time;
+        $start = time - 3600;
+#        param('end', 
+#        param('start,
 }
 #unless ($rrd) { push @err, "Missing rrd? Strange!"; }
 
 if (!@err) {
     push @err, "Start must be before end" if $start >= $end;
 }
+
+print
+    header,
+    start_html('RRD viewer'),
+    '<script type="text/JavaScript" src="yarv.js"></script>',
+    start_form(-name=>'form1'), # FIXME: js action to change graph(s)
+    Dump,
+    (@RRDs > 1 ? 
+     "Data source:".popup_menu(RRD => \@RRDs) :
+     hidden(RRD => $RRDs[0])),
+    "Start:",
+    textfield('start'),
+    "End:",
+    textfield('end'),
+    submit,
+    br,
+    end_form, "\n";
+
 
 if (@err) {
     print br, map { (strong(safe_html($_)), br) } @err;
@@ -179,6 +182,8 @@ sub parse_template {
 #    print STDERR 'gi=', Dumper($gi);
     $vars->{graph_top} = $gi->{graph_top};
     $vars->{graph_left} = $gi->{graph_left};
+    $vars->{graph_width} = $gi->{graph_width};
+    $vars->{graph_height} = $gi->{graph_height};
 
     print STDERR 'vars=', Dumper($vars);
 #    print STDERR 'template=', Dumper($template);

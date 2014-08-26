@@ -19,24 +19,21 @@
 
 
 <div id='yarv_${imgid}_div'>
-  <img id='yarv_$imgid'
+  <img id='yarv_${imgid}'
        onmousemove='yarv_mousemove(event)'
        onmousedown='yarv_mousedown(event, "yarv_${imgid}")'
        onmouseup='yarv_mouseup(event)'
        onlosecapture='yarv_losecapture()'
-       width=${width}
-       height=${height}
        graph_left=${graph_left}
+       graph_top=${graph_top}
+       graph_width=${graph_width}
+       graph_height=${graph_height}
        rrd='${rrd}'
+       url='${url}'
      >
 </div>
 
 
 <script LANGUAGE="JavaScript" type="text/javascript">
-// FIXME: only once for multiple images
-var end = ${end};       // start of graph, in epoch time
-var start = ${start};   // end of graph, in epoch time
-var cgi = '${url}';     // how to call ourselves
-
-  yarv_loadImage('yarv_${imgid}');
+  yarv_loadImage('yarv_${imgid}', ${start}, ${end});
 </script>
