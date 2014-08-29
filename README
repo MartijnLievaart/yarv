@@ -1,0 +1,52 @@
+YARV -- Yet Another RRD Viewer
+
+  -= OVERVIEW =-
+
+Yarv is a web based RRD viewer. I wrote it because I was not satisfied
+with other viewers. It aims to be very featureful while still easy to
+deploy.
+
+Although only tested with apache/mod_perl, it should work as a normal
+(perl) CGI under all webservers that support perl cgis.
+
+  -= FEATURES =-
+
+Currently implemented:
+
+* Allow choosing from multiple RRDs in a directory
+* Automatically find DSses to show
+* Zoom in and out with the mouse
+* Allow arbitrary time ranges from input controls
+* Administrator can choose size of graph
+* Multiple directories can be made available by administrator
+* Every directory can have its own settings
+
+Planned:
+
+* Allow user to control which DSses to show
+* Allow splitting in multiple graphs (f.i. split on .*-in and .*-out)
+* Allow combining DSses from multiple RRDs into one graph
+* Better integration with JQuery
+* When symlinked, look for config file with that name
+* Allow embedding in another site (mostly done)
+* Allow multiple instances on one webpage (mostly done)
+* Provide a basic interface if no JavaScript (mostly done)
+
+  -= BUGS =-
+
+Bugs? Never! But if you find one, please file a ticket at https://github.com/MartijnLievaart/yarv
+
+Known issues:
+* Does not work (well) without JavaScript
+* What browsers are exactly supported?
+
+  -= DEPENDENCIES =-
+
+Date::Manip
+HTML::Entities
+URI::Escape
+RRDs
+
+  -= COPYRIGHT =-
+
+(c) 2014 M. Lievaart (m at rtij dot nl)
