@@ -1,0 +1,37 @@
+YARV INSTALLATION
+
+= Webserver
+
+Copy or symlink yarv.cgi to a webserver accessable location. Copy
+yarv.js and yarv.html to another webserver accessable location.
+
+  -= ModPerl =-
+
+# Uncomment if not loaded by default
+#LoadModule perl_module  /usr/lib/httpd/modules/mod_perl.so
+
+  Alias /yarv/ /path/to/yarv.cgi/
+  <Location /yarv/yarv.cgi>
+      PerlSetEnv YARV_CONF /some/path/yarv.conf
+      SetHandler perl-script
+      PerlResponseHandler ModPerl::Registry
+  </Location>
+
+  -= Other =-
+
+Follow instructions to install perl CGIs for your webserver.
+
+= Configuration
+
+Create /some/path/yarv.conf:
+
+       geometry=800x300
+       default_module=test
+
+       [test]
+
+       directory=/some/path/rrd/
+       html=/some/path/yarv.html
+
+
+
