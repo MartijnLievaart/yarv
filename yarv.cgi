@@ -22,9 +22,6 @@ use strict;
 use warnings;
 no warnings 'redefine';
 
-# FIXME.
-use constant CONF_FILE => '/projects/yarv/yarv.conf';
-
 my $default_width = 800;
 my $default_height = 250;
 
@@ -38,7 +35,11 @@ sub url_param {
 our %colormap = colornames();
 
 # Read the config for the module requested
-my %modconf = read_yarv_conf();
+# FIXME.
+#use constant CONF_FILE => '/projects/yarv/yarv.conf';
+my $conffile_name = $ENV{YARV_CONF} ? $ENV{YARV_CONF} : '/etc/yarv/yarv.conf';
+
+my %modconf = read_yarv_conf($conffile_name);
 our $module = url_param('module') || $modconf{'*'}{default_module};
 die "Unknown module" unless defined $module and exists $modconf{$module};
 my %config = %{$modconf{'*'}} if exists $modconf{'*'};
@@ -270,10 +271,10 @@ sub create_png {
 }
 
 sub read_yarv_conf {
-        my $conffile = CONF_FILE;
+        my ($conffile) = @_;
         my %conf;
         my $section = '*';
-        open my $c, '<', $conffile or die "Cannot open $conffile: $!";
+        open my $c, '<', $conf_file or die "Cannot open $conf_file: $!";
         while (<$c>) {
                 chomp;
                 /^\s*(?:\#|$)/ and next;
