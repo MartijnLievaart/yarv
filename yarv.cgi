@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 # -*- mode: perl; -*-
 
+use 5.008;
+
 use CGI::Carp qw(fatalsToBrowser);
 use CGI qw(:standard);
 
